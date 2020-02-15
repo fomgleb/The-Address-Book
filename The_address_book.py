@@ -1,97 +1,96 @@
 import pickle, os, shutil
 
 class Address_book:
-    way_to_dir = os.path.abspath("save_AddressBook") #abspath() Достраивает путь к исполняемому файлу
-    way_to_dict = way_to_dir + "\\" + "save_dict" + ".data"
-    #Метод который создает папку save_Address_book
-    def create_folder():
-        if os.path.isdir(Address_book.way_to_dir) == False: #isdir() проверяет, есть ли папка
+    way_to_dir = os.path.abspath("save_AddressBook") #abspath() там где находится командная строка or исполняемый файл достраивает путь
+    #Метод который создает папку Address_book
+    def create_dir():
+        if os.path.isdir(Address_book.way_to_dir) == False: #isdir() проверяет есть ли папка
             os.mkdir(Address_book.way_to_dir) #mkdir() создает папку
         else:
             pass
-    #Сохраняем словарь в файл.data
-    def save_dict(dict):
-        Address_book.create_folder()
-        f = open(Address_book.way_to_dict, "wb")
-        pickle.dump(dict, f)
+    #Убирает все из строки, что написано в переменной forbidden
+    def delete_forbidden(string):
+        forbidden = (",","?","!",":",";","-","(",")","[","]","'","«","»","/",'"')
+        for i in forbidden:
+            return string.replace(i, "")
+    #Создает файл.data, который содержит словарь
+    def create_data(name, address):
+        Address_book.create_dir()
+        new_name = Address_book.delete_forbidden(name)
+        dict = {name:address}
+        f = open(Address_book.way_to_dir+"\\"+new_name+".data", "wb") #открываем
+        pickle.dump(dict, f) #Вгружаем
         f.close()
-    #Добавляем в словарь ключ:значение
-    def add_to_dict(key, value):
-        dict = Address_book.load_dict()#Загружаем словарь
-        dict[key] = value              #В словарь dict вставляем ключ и значение
-        return dict
-    #Загружаем словарь из файла.data
-    def load_dict():
-        if os.path.isfile(Address_book.way_to_dict):
-            f = open(Address_book.way_to_dict, "rb")
-            return pickle.load(f)
+    #В файле словарь, из словаря берётся значение и возвращается
+    def return_address(name):
+        name = Address_book.delete_forbidden(name)
+        if os.path.isfile(Address_book.way_to_dir+"\\"+name+".data") == False: #isfile() - есть такой файл, или нет
+            address = f"Не удалось найти {name}"
         else:
-            return {}
-    #Удаляет папку
+            f = open(Address_book.way_to_dir+"\\"+name+".data", "rb")
+            file_load = pickle.load(f) #загружаем
+            for value in file_load:
+                address = file_load[value] # возвращаем значение, а ключ не.
+        return address
+    # возвращает список в котором словари, все словари.
+    def print_all_dict():
+        Address_book.create_dir()
+        files = os.listdir(Address_book.way_to_dir) #получаем список всех файлов в директории
+        list = []
+        for file in files: #открываем и загружаем в список каждый словарь из файлов другого списка
+            f = open(Address_book.way_to_dir+"\\"+file, "rb")
+            file_load = pickle.load(f)
+            list.append(file_load)
+            f.close()
+        if list == []:
+            list = "Пусто"
+        return list
+    #Удаляет из директории указаный файл
+    def delete_dict(name):
+        name = Address_book.delete_forbidden(name)
+        try:
+            os.remove(Address_book.way_to_dir+"\\"+name+".data")
+        except:
+            return f"Не удается найти {name}"
+        else:
+            return "Успешно удалено"
+    #Удаляет папку со всем что внутри
     def delete_all_dict():
         try:
             shutil.rmtree(Address_book.way_to_dir) #Удаляет папку со всем что внутри
         except:
             pass
-    #Найти значение по ключу
-    def find_key(key):
-        load1 = Address_book.load_dict()
-        try:
-            find = load1[key]
-        except:
-            return None
-        return find
-    #Удалить ключ
-    def delete_one_key(key):
-        dict = Address_book.load_dict()
-        try:
-            dict.pop(key)
-        except:
-            return False
-        Address_book.save_dict(dict)
-
+        return "Успешно удалено"
 
 
 Choice = ""
-while True:
-    Choice = input('''-----------------------------------------------------------------------------------
-Введите команду: ''')
-    Choice = Choice.lower().replace(" ", "")
-    if Choice == "список" or Choice == "с":
-        dir = Address_book.load_dict()
-        if len(dir) == 0:
+while Choice != "выход":
+    Choice = input("\nВведите команду: ")
+    Choice = Address_book.delete_forbidden(Choice.lower().replace(" ", ""))
+    if Choice == "список":
+        list = Address_book.print_all_dict()
+        if list == "Пусто":
             print("Пусто")
         else:
-            print(f"{'|Имя|': >40}:|Адрес|")
-
-            for key in dir:
-                print(f"{key: >39} : {dir[key]}")
-    elif Choice == "найти" or Choice == "н":
-        value = Address_book.find_key(input("Имя: "))
-        if value == None:
-            print("Не найдено")
-        else:
-            print(f"Адрес: {value}")
-    elif Choice == "добавить" or Choice == "д":
-        Address_book.save_dict(Address_book.add_to_dict(input("Имя: "), input("Адрес: ")))
-    elif Choice == "удалить" or Choice == "у":
-        key = Address_book.delete_one_key(input("Что: "))
-        if key == False:
-            print("Не найдено")
-        else:
-            print("Успешно удалено")
-    elif Choice == "удалитьвсе" or Choice == "удалитьвсё" or Choice == "ув":
-        Address_book.delete_all_dict()
-        print("Успешно удалено")
-    elif Choice == "помощь" or Choice == "п":
+            for dict in list:
+                for value in dict:
+                    print(value,":",dict[value])
+    elif Choice == "найти":
+        print("Адрес: "+Address_book.return_address(input("Имя: ")))
+    elif Choice == "добавить":
+        Address_book.create_data(input("Имя: "), input("Адрес: "))
+    elif Choice == "удалить":
+        print(Address_book.delete_dict(input("Что: ")))
+    elif Choice == "удалитьвсе" or Choice == "удалитьвсё":
+        print(Address_book.delete_all_dict())
+    elif Choice == "помощь":
         print("""Команды:
-    'список'или'с' - показать всю адресную книгу
-    'найти'или'н' - найти адрес по имени
-    'добавить'или'д' - добавить имя:адрес в список
-    'удалить'или'у' - удалить имя:адрес из списка
-    'удалить все'или'ув' - удалить весь список
-    'выход'или'в' - выйти из программы""")
-    elif Choice == "выход" or Choice == "в":
-        break
+    'список' - Показать список имя:адрес
+    'добавить' - добавить имя:адрес в список
+    'удалить' - удалить имя:адрес из списка
+    'удалить все' - удалить весь список
+    'выход' - выйти из программы""")
+    elif Choice == "выход":
+        continue
     else:
         print("Введите 'помощь', что бы посмотреть список команд")
